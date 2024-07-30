@@ -2,6 +2,7 @@ const http = require('http');
 const mongoose = require('mongoose');
 const express = require('express');
 require('dotenv').config();
+const cors = require('cors')
 
 const hostname = '0.0.0.0';
 const port = process.env.PORT || 3005;
@@ -11,6 +12,7 @@ const app = express();
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+app.use(cors())
 
 // Replace the following with your MongoDB connection string
 const mongoDB = 'mongodb+srv://akilsalamnk:akiljithu@cluster0.fymjrfg.mongodb.net/AiferChatApp'; // Local MongoDB instance
