@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 
 const MessageSchema = new Schema({
     sender: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: "User"
     },
     content: {
@@ -12,7 +12,7 @@ const MessageSchema = new Schema({
         // trim: true,
     },
     chat: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: "Chat"
     },
     // isImage: {
