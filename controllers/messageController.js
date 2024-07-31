@@ -16,9 +16,9 @@ const allMessages = async (req, res) => {
 
 
 const sendMessage = async (req,res) => {
-    const { sender, content, chatId, isImage, isVoice } = req.body;
+    const { sender, content, chatId } = req.body;
 
-    if (!sender ||!content || !chatId ||!isImage ||!isVoice) {
+    if (!sender ||!content || !chatId ) {
         res.json({ success: false, message: "all body required" });
         return res.sendStatus(400);
     }
@@ -27,8 +27,8 @@ const sendMessage = async (req,res) => {
         sender: sender,
         content: content,
         chat: chatId,
-        isImage: isImage,
-        isVoice: isVoice
+        // isImage: isImage,
+        // isVoice: isVoice
     };
 
     try {

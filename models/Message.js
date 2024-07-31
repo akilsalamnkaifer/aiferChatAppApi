@@ -15,14 +15,14 @@ const MessageSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Chat"
     },
-    isImage: {
-        type: Boolean,
-        default: false
-    },
-    isVoice: {
-        type: Boolean,
-        default: false
-    }
+    // isImage: {
+    //     type: Boolean,
+    //     default: false
+    // },
+    // isVoice: {
+    //     type: Boolean,
+    //     default: false
+    // }
 });
 
 const Message = mongoose.model('Message', MessageSchema);
