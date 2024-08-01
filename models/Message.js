@@ -9,20 +9,15 @@ const MessageSchema = new Schema({
     },
     content: {
         type: String,
-        // trim: true,
+        // trim: true, 
     },
     chat: {
         type: String,
         ref: "Chat"
-    },
-    // isImage: {
-    //     type: Boolean,
-    //     default: false
-    // },
-    // isVoice: {
-    //     type: Boolean,
-    //     default: false
-    // }
+    }
+},
+{
+    timestamps: true
 });
 
 const Message = mongoose.model('Message', MessageSchema);

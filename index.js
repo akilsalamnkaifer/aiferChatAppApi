@@ -3,20 +3,13 @@ const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const connectDB = require('./config/db');
+const Message = require('./models/Message'); // Assuming you have a Message model defined in Mongoose
 require('dotenv').config();
+
 const app = express();
 const server = http.createServer(app);
-// Import and use routes
-const mentorRoutes = require('./routes/mentorRouter');
-const chatRoutes = require('./routes/chatRouter');
-const messageRoutes = require('./routes/messageRouter');
-const Message = require('./models/Message');
-const io = socketIo(server, {
-  cors: {
-    origin: "https://8a3c-103-114-252-77.ngrok-free.app", // Replace with your LMS frontend URL
-    methods: ["GET", "POST"],
-  },
-});
+const io = socketIo(server); // No CORS configuration
+
 
 const hostname = '0.0.0.0';
 const port = process.env.PORT || 3005;
@@ -28,33 +21,35 @@ app.use(cors());
 // Connect to the database
 connectDB();
 
-// On the server-side
-io.on('connection', (socket) => {
-  console.log('A user connected');
+io.on('connection', async (socket) => {
+  try {
+    const messages = await Message.find({ chat });
+    messages.forEach((message) => {
+      socket.emit('message', message);
+    });
+    console.log("mes",messages);
+  } catch (err) {
+    console.error(err);
+  }
 
-  socket.on('joinRoom', (chatId) => {
-    socket.join(chatId);
-    console.log(`User joined chat room: ${chatId}`);
-  });
-
-  socket.on('sendMessage', async (messageData) => {
+  socket.on('message', async (messageData) => {
+    const { sender, content, chatId } = messageData;
     try {
-      const { sender, content, chatId } = messageData;
-      const newMessage = await Message.create({ sender, content, chat: chatId });
-      
-      // Emit the new message to all clients in the room
-      io.to(chatId).emit('newMessage', newMessage);
-    } catch (error) {
-      console.error('Error sending message:', error);
+      const newMessage = new Message({ sender, content, chatId });
+      await newMessage.save();
+      console.log("new",newMessage);
+      // Broadcast message to all clients
+      io.emit('message', newMessage);
+    } catch (err) {
+      console.error(err);
     }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('A user disconnected');
   });
 });
 
-
+// Import and use routes
+const mentorRoutes = require('./routes/mentorRouter');
+const chatRoutes = require('./routes/chatRouter');
+const messageRoutes = require('./routes/messageRouter');
 
 app.use('/', mentorRoutes);
 app.use('/', chatRoutes);
