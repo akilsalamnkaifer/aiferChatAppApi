@@ -74,9 +74,9 @@ io.on('connection', (socket) => {
 });
 
 // Import and use routes
-// const mentorRoutes = require('./routes/mentorRouter');
-// const chatRoutes = require('./routes/chatRouter');
-// const messageRoutes = require('./routes/messageRouter');
+const mentorRoutes = require('./routes/mentorRouter');
+const chatRoutes = require('./routes/chatRouter');
+const messageRoutes = require('./routes/messageRouter');
 
 app.use('/', mentorRoutes);
 app.use('/', chatRoutes);
