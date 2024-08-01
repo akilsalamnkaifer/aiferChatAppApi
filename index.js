@@ -78,9 +78,9 @@ io.on('connection', (socket) => {
 // const chatRoutes = require('./routes/chatRouter');
 // const messageRoutes = require('./routes/messageRouter');
 
-// app.use('/', mentorRoutes);
-// app.use('/', chatRoutes);
-// app.use('/', messageRoutes);
+app.use('/', mentorRoutes);
+app.use('/', chatRoutes);
+app.use('/', messageRoutes);
 
 server.listen(port, hostname, () => {
   console.log(`Server running at http://${hostname}:${port}/`);
