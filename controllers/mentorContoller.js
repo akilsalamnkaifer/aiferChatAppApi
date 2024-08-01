@@ -2,7 +2,6 @@ const Mentor = require('../models/Mentor');
 
 const getMentorBySubject = async (req, res) => {
   const subject = req.body.subject;
-  const isGroup = req.body.isGroup;
   if (!subject) {
     return res.status(400).send('Subject query parameter is required');
   }
