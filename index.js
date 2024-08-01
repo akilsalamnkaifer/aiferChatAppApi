@@ -46,9 +46,10 @@ io.on('connection', (socket) => {
   console.log('New client connected');
 
   // Send existing messages to the client when they join the chat
-  socket.on('joinChat', (chatId) => {
-    console.log("chatId",chatId);
-    Message.find({ chatId: chatId })
+  socket.on('joinChat', (data) => {
+    const chatId = data.chatId; // Extract chatId from the data object
+    console.log("chatId", chatId);
+    Message.find({ chatId: chatId }) // Use chatId directly as a string
       .then(messages => {
         messages.forEach(message => {
           socket.emit('message', message);
@@ -56,6 +57,7 @@ io.on('connection', (socket) => {
       })
       .catch(err => console.error('Error fetching messages:', err));
   });
+  
 
   // Receive and save new messages
   socket.on('message', (messageData) => {
