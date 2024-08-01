@@ -19,7 +19,7 @@ const createChatBox = async (req, res) => {
     chat = new Chat({ users });
     await chat.save();
 
-    res.status(201).json({ success: true, data: chat, message: "created new" });
+    res.status(200).json({ success: true, data: chat, message: "created new" });
   } catch (err) {
     res.status(500).send(err.message);
   }
