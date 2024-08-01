@@ -13,7 +13,7 @@ const io = socketIo(server, {
     origin: (origin, callback) => {
       const allowedOrigins = [
         "http://localhost:3000",
-        "https://f1a5-150-129-103-189.ngrok-free.app"
+        "https://lmstest.aifer.in"
       ];
       if (allowedOrigins.includes(origin) || !origin) {
         callback(null, true);
@@ -45,16 +45,16 @@ connectDB().catch(err => {
 io.on('connection', (socket) => {
   console.log('New client connected');
 
-  // Send existing messages to the client
-  socket.on('joinChat', () => {
-    Message.find().sort({ timestamps: 1 }) // 1 for ascending order, -1 for descending order
-    .then(messages => {
-      messages.forEach(message => {
-        socket.emit('message', message);
-      });
-    })
-    .catch(err => console.error('Error fetching messages:', err));
-  
+  // Send existing messages to the client when they join the chat
+  socket.on('joinChat', (chatId) => {
+    console.log("chatId",chatId);
+    Message.find({ chatId })
+      .then(messages => {
+        messages.forEach(message => {
+          socket.emit('message', message);
+        });
+      })
+      .catch(err => console.error('Error fetching messages:', err));
   });
 
   // Receive and save new messages
@@ -63,7 +63,7 @@ io.on('connection', (socket) => {
     const newMessage = new Message({ sender, content, chatId });
     newMessage.save()
       .then(savedMessage => {
-        io.emit('message', savedMessage);
+        io.emit('message', savedMessage); // Send the new message to all connected clients
       })
       .catch(err => console.error('Error saving message:', err));
   });
@@ -72,6 +72,7 @@ io.on('connection', (socket) => {
     console.log('Client disconnected');
   });
 });
+
 
 // Import and use routes
 const mentorRoutes = require('./routes/mentorRouter');
