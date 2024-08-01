@@ -48,7 +48,7 @@ io.on('connection', (socket) => {
   // Send existing messages to the client when they join the chat
   socket.on('joinChat', (chatId) => {
     console.log("chatId",chatId);
-    Message.find({ chatId })
+    Message.find({ chatId: chatId })
       .then(messages => {
         messages.forEach(message => {
           socket.emit('message', message);
