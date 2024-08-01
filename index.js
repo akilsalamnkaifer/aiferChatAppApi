@@ -3,12 +3,30 @@ const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const connectDB = require('./config/db');
-const Message = require('./models/Message'); // Assuming you have a Message model defined in Mongoose
+const Message = require('./models/Message');
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server); // No CORS configuration
+const io = socketIo(server, {
+  cors: {
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "https://f1a5-150-129-103-189.ngrok-free.app"
+      ];
+      if (allowedOrigins.includes(origin) || !origin) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ["GET", "POST"],
+    allowedHeaders: ["my-custom-header"],
+    credentials: true
+  }
+});
+
 
 
 const hostname = '0.0.0.0';
@@ -16,44 +34,53 @@ const port = process.env.PORT || 3005;
 
 // Middleware to parse JSON bodies
 app.use(express.json());
-app.use(cors());
+app.use(cors()); // Enable CORS for all routes
 
 // Connect to the database
-connectDB();
+connectDB().catch(err => {
+  console.error('Failed to connect to the database:', err);
+  process.exit(1); // Exit the process if the connection fails
+});
 
-io.on('connection', async (socket) => {
-  try {
-    const messages = await Message.find({ chat });
-    messages.forEach((message) => {
-      socket.emit('message', message);
-    });
-    console.log("mes",messages);
-  } catch (err) {
-    console.error(err);
-  }
+io.on('connection', (socket) => {
+  console.log('New client connected');
 
-  socket.on('message', async (messageData) => {
+  // Send existing messages to the client
+  socket.on('joinChat', () => {
+    Message.find().sort({ timestamps: 1 }) // 1 for ascending order, -1 for descending order
+    .then(messages => {
+      messages.forEach(message => {
+        socket.emit('message', message);
+      });
+    })
+    .catch(err => console.error('Error fetching messages:', err));
+  
+  });
+
+  // Receive and save new messages
+  socket.on('message', (messageData) => {
     const { sender, content, chatId } = messageData;
-    try {
-      const newMessage = new Message({ sender, content, chatId });
-      await newMessage.save();
-      console.log("new",newMessage);
-      // Broadcast message to all clients
-      io.emit('message', newMessage);
-    } catch (err) {
-      console.error(err);
-    }
+    const newMessage = new Message({ sender, content, chatId });
+    newMessage.save()
+      .then(savedMessage => {
+        io.emit('message', savedMessage);
+      })
+      .catch(err => console.error('Error saving message:', err));
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
   });
 });
 
 // Import and use routes
-const mentorRoutes = require('./routes/mentorRouter');
-const chatRoutes = require('./routes/chatRouter');
-const messageRoutes = require('./routes/messageRouter');
+// const mentorRoutes = require('./routes/mentorRouter');
+// const chatRoutes = require('./routes/chatRouter');
+// const messageRoutes = require('./routes/messageRouter');
 
-app.use('/', mentorRoutes);
-app.use('/', chatRoutes);
-app.use('/', messageRoutes);
+// app.use('/', mentorRoutes);
+// app.use('/', chatRoutes);
+// app.use('/', messageRoutes);
 
 server.listen(port, hostname, () => {
   console.log(`Server running at http://${hostname}:${port}/`);
