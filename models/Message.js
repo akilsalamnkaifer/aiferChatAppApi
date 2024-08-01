@@ -11,7 +11,7 @@ const MessageSchema = new Schema({
         type: String,
         // trim: true, 
     },
-    chat: {
+    chatId: {
         type: String,
         ref: "Chat"
     }
