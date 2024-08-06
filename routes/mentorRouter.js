@@ -1,5 +1,5 @@
 const express = require('express');
-const { getMentorBySubject } = require('../controllers/mentorContoller');
+const { getChatUserBySubject } = require('../controllers/mentorContoller');
 
 const router = express.Router();
 
@@ -8,6 +8,6 @@ router.use((req, res, next) => {
     next();
   });
 
-router.post('/mentor', getMentorBySubject);
+router.post('/chatUser', getChatUserBySubject);
 
 module.exports = router;
