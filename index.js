@@ -82,7 +82,7 @@ io.on("connection", (socket) => {
     const targetId = msg.targetId;
     console.log({ message, sourceId, chatId });
     console.log(clients[targetId]);
-    const newMessage = new MessageModel({ message, sourceId, chatId });
+    const newMessage = new Message({ message, sourceId, chatId });
     newMessage.save();
     socket.emit("message", msg);
     console.log("Saved");
