@@ -78,24 +78,24 @@ io.on("connection", (socket) => {
   // Sending messages to each other
   socket.on("message", async (msg) => {
     console.log("Calling Send Message");
-    const { message, sourceId, targetId, isImage, imageBuffer, imageName } = msg; // Assuming imageBuffer and imageName are part of the message object
+    const { message, sourceId, targetId } = msg; // Assuming imageBuffer and imageName are part of the message object
     
-    if (isImage) {
-      try {
-        // Upload image to S3
-        await uploadImageToS3(imageBuffer, imageName);
+    // if (isImage) {
+      // try {
+      //   // Upload image to S3
+      //   await uploadImageToS3(imageBuffer, imageName);
 
-        // Save message with image details to MongoDB
-        const newMessage = new MessageModel({ message: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${imageName}`, sourceId, chatId, isImage });
-        await newMessage.save();
-        console.log("Image uploaded and message saved");
+      //   // Save message with image details to MongoDB
+      //   const newMessage = new MessageModel({ message: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${imageName}`, sourceId, chatId, isImage });
+      //   await newMessage.save();
+      //   console.log("Image uploaded and message saved");
 
-        // Emit message to target client
-        socket.emit("message", msg);
-      } catch (error) {
-        console.error("Error uploading image or saving message:", error);
-      }
-    } else {
+      //   // Emit message to target client
+      //   socket.emit("message", msg);
+      // } catch (error) {
+      //   console.error("Error uploading image or saving message:", error);
+      // }
+    // } else {
       // Save message to MongoDB
       const newMessage = new MessageModel({ message, sourceId, chatId });
       await newMessage.save();
@@ -103,7 +103,7 @@ io.on("connection", (socket) => {
 
       // Emit message to target client
       socket.emit("message", msg);
-    }
+    // }
   });
 
   socket.on("deleteMessage", async (msgId) => {
@@ -191,8 +191,6 @@ io.on("connection", (socket) => {
       // Extract the UIDs from the result
       const uids = userCourses.map((row) => row.uid);
 
-      console.log("uids",uids);
-      
   
       // Check if there are any UIDs
       if (uids.length === 0) {
@@ -204,8 +202,6 @@ io.on("connection", (socket) => {
       const query = 'SELECT * FROM dot_users WHERE firebase_uid IN (?)';
       const users = await db(query, [uids]);
 
-      console.log("users",users);
-      
   
       // Categorize users
       const mentors = users.filter((user) => user.user_type === 'mentor');
