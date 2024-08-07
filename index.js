@@ -230,11 +230,7 @@ io.on("connection", (socket) => {
     }
 
     socket.on("refreshConnection", () => {
-      console.log("Refreshing connection for socket ID:", socket.id);
-      socket.disconnect();
-      setTimeout(() => {
-        socket.connect();
-      }, 1000); // Adjust the delay as needed
+      console.log("Refreshing connection");
     });
 
   });
