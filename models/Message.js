@@ -9,13 +9,12 @@ const MessageSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  // targetId: {
-  //   type: String,
-  //   required: true,
-  // },
   chatId: {
     type: String,
     required: true,
+  },
+  isImage: {
+    type: Boolean
   },
 });
 

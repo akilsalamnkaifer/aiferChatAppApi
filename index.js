@@ -3,11 +3,20 @@ const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const connectDB = require('./config/db');
+const { db, checkConnection } = require('./config/sqlDb')
 const Message = require('./models/Message');
 const ChatUser = require('./models/ChatUser');
-const Chat = require('./models/Chat')
+const Chat = require('./models/Chat');
 let chatId = "";
 require('dotenv').config();
+const AWS = require('aws-sdk');
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+});
+
+checkConnection()
 
 const app = express();
 const server = http.createServer(app);
@@ -31,42 +40,123 @@ connectDB().catch(err => {
   process.exit(1); // Exit the process if the connection fails
 });
 
+// Function to upload image to S3
+const uploadImageToS3 = (imageBuffer, imageName) => {
+  // Get the current date
+  const currentDate = new Date();
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+  const day = String(currentDate.getDate()).padStart(2, '0');
 
-const clients = {};
+  // Construct the file path
+  const filePath = `${year}/${month}/${day}/${imageName}`;
 
-// connect to the Soket server
+  // Set the parameters for S3 upload
+  const params = {
+    Bucket: process.env.S3_BUCKET_NAME,
+    Key: filePath,
+    Body: imageBuffer,
+    ContentType: 'image/jpeg', // or the appropriate MIME type
+    ACL: 'public-read' // adjust the ACL as needed
+  };
+
+  // Upload the image
+  return s3.upload(params).promise();
+};
+
+// Connect to the Socket server
 io.on("connection", (socket) => {
   console.log("Connected to Socket.io");
-  
-  socket.on("signin", (id) => {
-    clients[id] = socket;
-      console.log(clients);
-  });
 
-  // Sending messages to Each Other Orginal
+  // Remove the "signin" functionality and clients management
+  // socket.on("signin", (id) => {
+  //   console.log("Signed in");
+  //   clients[id] = socket;
+  //   // console.log(clients);
+  // });
 
-  /// dup
-  socket.on("message", (msg) => {
+  // Sending messages to each other
+  socket.on("message", async (msg) => {
     console.log("Calling Send Message");
-    const message = msg.message;
-    const sourceId = msg.sourceId;
-    const targetId = msg.targetId;
-    if (clients[targetId]) {
+    const { message, sourceId, targetId, isImage, imageBuffer, imageName } = msg; // Assuming imageBuffer and imageName are part of the message object
+    
+    if (isImage) {
+      try {
+        // Upload image to S3
+        await uploadImageToS3(imageBuffer, imageName);
+
+        // Save message with image details to MongoDB
+        const newMessage = new MessageModel({ message: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${imageName}`, sourceId, chatId, isImage });
+        await newMessage.save();
+        console.log("Image uploaded and message saved");
+
+        // Emit message to target client
+        socket.emit("message", msg);
+      } catch (error) {
+        console.error("Error uploading image or saving message:", error);
+      }
+    } else {
+      // Save message to MongoDB
       const newMessage = new MessageModel({ message, sourceId, chatId });
-      newMessage.save();
-      clients[targetId].emit("message", msg);
-      console.log("Saved");
+      await newMessage.save();
+      console.log("Message saved");
+
+      // Emit message to target client
+      socket.emit("message", msg);
     }
   });
 
-  socket.on("leaveChat", ({ sourceId }) => {
-    console.log("Leave Chat:", sourceId);
-    delete clients[sourceId];
+  socket.on("deleteMessage", async (msgId) => {
+    try {
+      // Find the message in MongoDB
+      const message = await MessageModel.findById(msgId);
+
+      if (!message) {
+        console.log("Message not found");
+        return;
+      }
+
+      // If the message contains an image, delete it from S3
+      if (message.isImage) {
+        const imageUrl = message.message;
+        const imageName = imageUrl.split('/').pop(); // Get the image name from the URL
+
+        try {
+          await deleteImageFromS3(imageName);
+          console.log("Image deleted from S3");
+        } catch (error) {
+          console.error("Error deleting image from S3:", error);
+        }
+      }
+
+      // Delete the message from MongoDB
+      await MessageModel.findByIdAndDelete(msgId);
+      console.log("Message deleted from MongoDB");
+
+      // Emit a message to the client to confirm deletion
+      socket.emit("messageDeleted", { msgId });
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
   });
 
-  // Dup
+  // Function to delete an image from S3
+  async function deleteImageFromS3(imageName) {
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: imageName,
+    };
+
+    await s3.deleteObject(params).promise();
+  }
+
+  socket.on("leaveChat", ({ sourceId }) => {
+    console.log("Leave Chat:", sourceId);
+    // Removed clients object logic
+  });
+
   socket.on("joinChat", async ({ users }) => {
-    console.log(users);
+    console.log("Joined Chat", users);
     try {
       let chat = await Chat.findOne({
         users: { $all: users, $size: users.length },
@@ -93,37 +183,28 @@ io.on("connection", (socket) => {
     }
   });
 
-  // fetch the mentor
-  socket.on("getUsers", ({ subject }) => {
-    console.log('calling');
-    console.log("Received getUsers request with subject:", subject);
-
-    if (!subject) {
-      console.log("Subject query parameter is missing");
-      socket.emit("error", "Subject query parameter is required");
-      return;
+  socket.on('getUsers', async (subject) => {
+    try {
+      // Fetch users from MySQL
+      const rows = await db('SELECT * FROM dot_users WHERE pg_subject = ?', [subject.subject]);
+     
+      
+      // Categorize users
+      const mentors = rows.filter((user) => user.user_type === "mentor");
+      const students = rows.filter((user) => user.user_type === "student");
+  
+      // Emit data via socket
+      socket.emit("users", { mentors, students });
+  
+    } catch (error) {
+      console.error('Error fetching or processing users:', error.message);
+      socket.emit('error', { message: 'Error fetching users' }); // Optionally emit an error message
     }
-
-    ChatUser.find({ subject })   
-      .then((users) => { 
-
-        // Example structure of users and filtering
-        const group = users.filter((user) => user.isGroup);
-        const mentors = users.filter((user) => user.isMentor);
-        const students = users.filter((user) => !user.isMentor && !user.isGroup);
-
-        // Log the categorized users
-        console.log("Group users:", group);
-        console.log("Mentor users:", mentors);
-        console.log("Student users:", students);
-
-        socket.emit("users", { group, mentors, students });
-      })
-      .catch((err) => {
-        console.error("Error fetching users:", err);
-        socket.emit("error", "Error fetching users");
-      });
   });
+  
+  
+  
+  
 });
 
 // Import and use routes
