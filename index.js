@@ -230,12 +230,16 @@ io.on("connection", (socket) => {
     }
   });
 
-
-
-
-
-
+  // Add the refresh connection functionality
+  socket.on("refreshConnection", () => {
+    console.log("Refreshing connection for socket ID:", socket.id);
+    socket.disconnect();
+    setTimeout(() => {
+      socket.connect();
+    }, 1000); // Adjust the delay as needed
+  });
 });
+
 
 // Import and use routes
 const mentorRoutes = require('./routes/mentorRouter');
