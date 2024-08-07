@@ -228,18 +228,23 @@ io.on("connection", (socket) => {
       console.error('Error fetching or processing users:', error.message);
       socket.emit('error', { message: 'Error fetching users' });
     }
+
+    socket.on("refreshConnection", () => {
+      console.log("Refreshing connection for socket ID:", socket.id);
+      socket.disconnect();
+      setTimeout(() => {
+        socket.connect();
+      }, 1000); // Adjust the delay as needed
+    });
+
   });
 
-  // Add the refresh connection functionality
-  socket.on("refreshConnection", () => {
-    console.log("Refreshing connection for socket ID:", socket.id);
-    socket.disconnect();
-    setTimeout(() => {
-      socket.connect();
-    }, 1000); // Adjust the delay as needed
-  });
+
+
+
+
+
 });
-
 
 // Import and use routes
 const mentorRoutes = require('./routes/mentorRouter');
