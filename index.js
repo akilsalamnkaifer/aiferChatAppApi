@@ -188,7 +188,6 @@ io.on("connection", (socket) => {
       // Fetch users from MySQL
       const rows = await db('SELECT * FROM dot_users WHERE pg_subject = ?', [subject.subject]);
      
-      
       // Categorize users
       const mentors = rows.filter((user) => user.user_type === "mentor");
       const students = rows.filter((user) => user.user_type === "student");
