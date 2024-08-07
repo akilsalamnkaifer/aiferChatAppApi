@@ -185,21 +185,42 @@ io.on("connection", (socket) => {
 
   socket.on('getUsers', async (subject) => {
     try {
-      // Fetch users from MySQL
-      const rows = await db('SELECT * FROM dot_users WHERE pg_subject = ?', [subject.subject]);
-     
-      // Categorize users
-      const mentors = rows.filter((user) => user.user_type === "mentor");
-      const students = rows.filter((user) => user.user_type === "student");
+      // Fetch UIDs from user_courses based on the subject
+      const userCourses = await db('SELECT uid FROM user_courses WHERE course_id = ?', [subject]);
+      
+      // Extract the UIDs from the result
+      const uids = userCourses.map((row) => row.uid);
+
+      console.log("uids",uids);
+      
   
-      // Emit data via socket
-      socket.emit("users", { mentors, students });
+      // Check if there are any UIDs
+      if (uids.length === 0) {
+        socket.emit('getUsers', { mentors: [], students: [] });
+        return;
+      }
+  
+      // Fetch users from dot_users based on the UIDs
+      const query = 'SELECT * FROM dot_users WHERE firebase_uid IN (?)';
+      const users = await db(query, [uids]);
+
+      console.log("users",users);
+      
+  
+      // Categorize users
+      const mentors = users.filter((user) => user.user_type === 'mentor');
+      const students = users.filter((user) => user.user_type === 'student');
+  
+      // Emit data via socket using the 'getUsers' event
+      socket.emit('getUsers', { mentors, students });
   
     } catch (error) {
       console.error('Error fetching or processing users:', error.message);
-      socket.emit('error', { message: 'Error fetching users' }); // Optionally emit an error message
+      socket.emit('error', { message: 'Error fetching users' });
     }
   });
+  
+  
   
   
   
