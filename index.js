@@ -80,31 +80,31 @@ io.on("connection", (socket) => {
     console.log("Calling Send Message");
     const { message, sourceId, targetId } = msg; // Assuming imageBuffer and imageName are part of the message object
     console.log({ message, sourceId, targetId });
-    
-    
+
+
     // if (isImage) {
-      // try {
-      //   // Upload image to S3
-      //   await uploadImageToS3(imageBuffer, imageName);
+    // try {
+    //   // Upload image to S3
+    //   await uploadImageToS3(imageBuffer, imageName);
 
-      //   // Save message with image details to MongoDB
-      //   const newMessage = new MessageModel({ message: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${imageName}`, sourceId, chatId, isImage });
-      //   await newMessage.save();
-      //   console.log("Image uploaded and message saved");
+    //   // Save message with image details to MongoDB
+    //   const newMessage = new MessageModel({ message: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${imageName}`, sourceId, chatId, isImage });
+    //   await newMessage.save();
+    //   console.log("Image uploaded and message saved");
 
-      //   // Emit message to target client
-      //   socket.emit("message", msg);
-      // } catch (error) {
-      //   console.error("Error uploading image or saving message:", error);
-      // }
+    //   // Emit message to target client
+    //   socket.emit("message", msg);
+    // } catch (error) {
+    //   console.error("Error uploading image or saving message:", error);
+    // }
     // } else {
-      // Save message to MongoDB
-      const newMessage = new MessageModel({ message, sourceId, chatId });
-      await newMessage.save();
-      console.log("Message saved");
+    // Save message to MongoDB
+    const newMessage = new MessageModel({ message, sourceId, chatId });
+    await newMessage.save();
+    console.log("Message saved");
 
-      // Emit message to target client
-      socket.emit("message", msg);
+    // Emit message to target client
+    socket.emit("message", msg);
     // }
   });
 
@@ -163,22 +163,22 @@ io.on("connection", (socket) => {
       let chat = await Chat.findOne({
         users: { $all: users, $size: users.length },
       });
-      Message.find({ chatId: chat._id })
-        .then((messages) => {
-          console.log("Fetched messages:", messages);
-          messages.forEach((message) => {
-            socket.emit("message", message);
-          });
-        })
-        .catch((err) => console.error("Error fetching messages:", err));
-      if (!chat) {
+      if (chat) {
+        Message.find({ chatId: chat._id })
+          .then((messages) => {
+            console.log("Fetched messages:", messages);
+            messages.forEach((message) => {
+              socket.emit("message", message);
+            });
+          })
+          .catch((err) => console.error("Error fetching messages:", err));
+        return chatId = chat._id;
+
+      } else {
         chat = new Chat({ users });
         await chat.save();
-        console.log(`Chat_ID created with users: ${chat._id} ::: ${chatId}`);
-        return (chatId = chat._id);
-      } else {
-        console.log(`Chat already exists with users: ${chat}`);
-        return (chatId = chat._id);
+        return chatId = chat._id;
+
       }
     } catch (error) {
       console.error("Error creating chat:", error);
@@ -189,40 +189,40 @@ io.on("connection", (socket) => {
     try {
       // Fetch UIDs from user_courses based on the subject
       const userCourses = await db('SELECT uid FROM user_courses WHERE course_id = ?', [subject]);
-      
+
       // Extract the UIDs from the result
       const uids = userCourses.map((row) => row.uid);
 
-  
+
       // Check if there are any UIDs
       if (uids.length === 0) {
         socket.emit('getUsers', { mentors: [], students: [] });
         return;
       }
-  
+
       // Fetch users from dot_users based on the UIDs
       const query = 'SELECT * FROM dot_users WHERE firebase_uid IN (?)';
       const users = await db(query, [uids]);
 
-  
+
       // Categorize users
       const mentors = users.filter((user) => user.user_type === 'mentor');
       const students = users.filter((user) => user.user_type === 'student');
-  
+
       // Emit data via socket using the 'getUsers' event
       socket.emit('getUsers', { mentors, students });
-  
+
     } catch (error) {
       console.error('Error fetching or processing users:', error.message);
       socket.emit('error', { message: 'Error fetching users' });
     }
   });
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
 });
 
 // Import and use routes
