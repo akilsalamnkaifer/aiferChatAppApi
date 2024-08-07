@@ -75,38 +75,51 @@ io.on("connection", (socket) => {
   //   // console.log(clients);
   // });
 
-  // Sending messages to each other
-  socket.on("message", async (msg) => {
+  socket.on("message", (msg) => {
     console.log("Calling Send Message");
-    const { message, sourceId, targetId } = msg; // Assuming imageBuffer and imageName are part of the message object
-    console.log({ message, sourceId, targetId });
-
-
-    // if (isImage) {
-    // try {
-    //   // Upload image to S3
-    //   await uploadImageToS3(imageBuffer, imageName);
-
-    //   // Save message with image details to MongoDB
-    //   const newMessage = new MessageModel({ message: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${imageName}`, sourceId, chatId, isImage });
-    //   await newMessage.save();
-    //   console.log("Image uploaded and message saved");
-
-    //   // Emit message to target client
-    //   socket.emit("message", msg);
-    // } catch (error) {
-    //   console.error("Error uploading image or saving message:", error);
-    // }
-    // } else {
-    // Save message to MongoDB
+    const message = msg.message;
+    const sourceId = msg.sourceId;
+    const targetId = msg.targetId;
+    console.log({ message, sourceId, chatId });
+    console.log(clients[targetId]);
     const newMessage = new MessageModel({ message, sourceId, chatId });
-    await newMessage.save();
-    console.log("Message saved");
-
-    // Emit message to target client
+    newMessage.save();
     socket.emit("message", msg);
-    // }
+    console.log("Saved");
   });
+
+  // // Sending messages to each other
+  // socket.on("message", async (msg) => {
+  //   console.log("Calling Send Message");
+  //   const { message, sourceId, targetId } = msg; // Assuming imageBuffer and imageName are part of the message object
+  //   console.log({ message, sourceId, targetId });
+
+
+  //   // if (isImage) {
+  //   // try {
+  //   //   // Upload image to S3
+  //   //   await uploadImageToS3(imageBuffer, imageName);
+
+  //   //   // Save message with image details to MongoDB
+  //   //   const newMessage = new MessageModel({ message: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${imageName}`, sourceId, chatId, isImage });
+  //   //   await newMessage.save();
+  //   //   console.log("Image uploaded and message saved");
+
+  //   //   // Emit message to target client
+  //   //   socket.emit("message", msg);
+  //   // } catch (error) {
+  //   //   console.error("Error uploading image or saving message:", error);
+  //   // }
+  //   // } else {
+  //   // Save message to MongoDB
+  //   const newMessage = new MessageModel({ message, sourceId, chatId });
+  //   await newMessage.save();
+  //   console.log("Message saved");
+
+  //   // Emit message to target client
+  //   socket.emit("message", msg);
+  //   // }
+  // });
 
   socket.on("deleteMessage", async (msgId) => {
     try {
