@@ -79,6 +79,7 @@ io.on("connection", (socket) => {
   socket.on("message", async (msg) => {
     console.log("Calling Send Message");
     const { message, sourceId, targetId } = msg; // Assuming imageBuffer and imageName are part of the message object
+    const msg.
     
     // if (isImage) {
       // try {
@@ -161,7 +162,7 @@ io.on("connection", (socket) => {
       let chat = await Chat.findOne({
         users: { $all: users, $size: users.length },
       });
-      MessageModel.find({ chatId: chat._id })
+      Message.find({ chatId: chat._id })
         .then((messages) => {
           console.log("Fetched messages:", messages);
           messages.forEach((message) => {
