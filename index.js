@@ -79,7 +79,6 @@ io.on("connection", (socket) => {
   socket.on("message", async (msg) => {
     console.log("Calling Send Message");
     const { message, sourceId, targetId } = msg; // Assuming imageBuffer and imageName are part of the message object
-    const msg.
     
     // if (isImage) {
       // try {
