@@ -81,7 +81,6 @@ io.on("connection", (socket) => {
     const sourceId = msg.sourceId;
     const targetId = msg.targetId;
     console.log({ message, sourceId, chatId });
-    console.log(clients[targetId]);
     const newMessage = new Message({ message, sourceId, chatId });
     newMessage.save();
     socket.emit("message", msg);

@@ -13,9 +13,6 @@ const MessageSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  isImage: {
-    type: Boolean
-  },
 });
 
 
