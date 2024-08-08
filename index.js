@@ -5,7 +5,6 @@ const socketIo = require('socket.io');
 const connectDB = require('./config/db');
 const { db, checkConnection } = require('./config/sqlDb')
 const Message = require('./models/Message');
-const ChatUser = require('./models/ChatUser');
 const Chat = require('./models/Chat');
 let chatId = "";
 require('dotenv').config();

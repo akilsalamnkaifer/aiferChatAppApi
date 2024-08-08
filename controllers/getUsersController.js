@@ -1,4 +1,3 @@
-const ChatUser = require('../models/ChatUser');
 const { db, checkConnection } = require('../config/sqlDb');
 
 const getChatUserBySubject = async (req, res) => {
