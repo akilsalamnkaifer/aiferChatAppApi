@@ -110,6 +110,34 @@ io.on("connection", (socket) => {
       console.error("Error creating chat:", error);
     }
   });
+
+  socket.on("joinGroup", async ({ users, subject }) => {
+  
+    try {
+      let chat = await Chat.findOne({
+        subject: subject,
+        users: { $all: users, $size: users.length },
+      });
+ 
+      if (chat) {
+        const messages = await Message.find({ chatId: chat._id });
+
+        messages.forEach((message) => {;
+          socket.emit("OneByOnemessage", message);
+        });
+        socket.join(chat._id.toString()); 
+        return (chatId = chat._id);
+      } else {
+        chat = new Chat({ users });
+        await chat.save();
+        socket.join(chat._id.toString()); 
+        return (chatId = chat._id);
+      }
+    } catch (error) {
+      console.error("Error creating chat:", error);
+    }
+  });
+
 });
 
 // // Connect to the Socket server
