@@ -71,7 +71,7 @@ io.on("connection", (socket) => {
     const { message, sourceId, targetId } = msg;
     console.log({ message, sourceId, targetId, chatId });
 
-    const newMessage = new MessageModel({ message, sourceId, chatId });
+    const newMessage = new Message({ message, sourceId, chatId });
     await newMessage.save();
     console.log("Saved");
 
@@ -93,7 +93,7 @@ io.on("connection", (socket) => {
       });
  
       if (chat) {
-        const messages = await MessageModel.find({ chatId: chat._id });
+        const messages = await Message.find({ chatId: chat._id });
 
         messages.forEach((message) => {;
           socket.emit("OneByOnemessage", message);
