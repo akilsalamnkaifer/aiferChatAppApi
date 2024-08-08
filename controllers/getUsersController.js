@@ -2,10 +2,8 @@ const ChatUser = require('../models/ChatUser');
 const { db, checkConnection } = require('../config/sqlDb');
 
 const getChatUserBySubject = async (req, res) => {
-  console.log("Request Body: ", req.body); // Log the entire request body
 
   const subject = req.body.subject;
-  console.log("Subject: ", subject);
 
   if (!subject) {
     console.error('No subject provided in the request body.');
@@ -37,7 +35,6 @@ const getChatUserBySubject = async (req, res) => {
 
     // Respond with categorized users
     res.json({ mentors, students });
-
   } catch (error) {
     console.error('Error fetching or processing users:', error.message);
     // Respond with an error message
