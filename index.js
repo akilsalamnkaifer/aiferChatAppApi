@@ -184,6 +184,8 @@ io.on("connection", (socket) => {
         chat = await Chat.findOne({
           users: { $all: users, $size: users.length }
         });
+
+        
       // }
       if (chat) {
         Message.find({ chatId: chat._id })
