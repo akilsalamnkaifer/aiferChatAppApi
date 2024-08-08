@@ -86,7 +86,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("joinChat", async ({ users }) => {
-  
+    console.log("Join Chat:", users);
+    
     try {
       let chat = await Chat.findOne({
         users: { $all: users, $size: users.length },
@@ -112,9 +113,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("joinGroup", async ({ users, subject }) => {
-  
+    console.log("Join Group:", users);
+    console.log("Subject:", subject);
+    
     try {
-      let chat = await Chat.findOne({
+      let chat = await GroupChat.findOne({
         subject: subject,
         users: { $all: users, $size: users.length },
       });
@@ -123,12 +126,12 @@ io.on("connection", (socket) => {
         const messages = await Message.find({ chatId: chat._id });
 
         messages.forEach((message) => {;
-          socket.emit("OneByOnemessage", message);
+          socket.emit("Groupmessages", message);
         });
         socket.join(chat._id.toString()); 
         return (chatId = chat._id);
       } else {
-        chat = new Chat({ users });
+        chat = new GroupChat({ subject,users });
         await chat.save();
         socket.join(chat._id.toString()); 
         return (chatId = chat._id);
@@ -324,6 +327,7 @@ io.on("connection", (socket) => {
 
 // Import and use routes
 const getUsersRoutes = require('./routes/getUsersRouter');
+const GroupChat = require('./models/GroupChat');
 app.use('/', getUsersRoutes);
 
 
