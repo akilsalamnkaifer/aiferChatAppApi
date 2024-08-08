@@ -32,6 +32,7 @@ const port = process.env.PORT || 3005;
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
 app.use(cors()); // Enable CORS for all routes
 
 // Connect to the database
@@ -171,10 +172,19 @@ io.on("connection", (socket) => {
 
   socket.on("joinChat", async ({ users }) => {
     console.log("Joined Chat", users);
+    // console.log("Subject: ", subject, "isGroup: ", isGroup);
     try {
-      let chat = await Chat.findOne({
-        users: { $all: users, $size: users.length },
-      });
+      let chat = "";
+      // if(isGroup){
+        // chat = await Chat.findOne({
+        //   subject: subject,
+        //   users: { $all: users, $size: users.length }
+        // });
+      // }else{
+        chat = await Chat.findOne({
+          users: { $all: users, $size: users.length }
+        });
+      // }
       if (chat) {
         Message.find({ chatId: chat._id })
           .then((messages) => {
@@ -197,59 +207,50 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on('getUsers', async (subject) => {
-    try {
-      // Fetch UIDs from user_courses based on the subject
-      const userCourses = await db('SELECT uid FROM user_courses WHERE course_id = ?', [subject]);
+  // socket.on('getUsers', async (subject) => {
+  //   try {
+  //     // Fetch UIDs from user_courses based on the subject
+  //     const userCourses = await db('SELECT uid FROM user_courses WHERE course_id = ?', [subject]);
 
-      // Extract the UIDs from the result
-      const uids = userCourses.map((row) => row.uid);
-
-
-      // Check if there are any UIDs
-      if (uids.length === 0) {
-        socket.emit('getUsers', { mentors: [], students: [] });
-        return;
-      }
-
-      // Fetch users from dot_users based on the UIDs
-      const query = 'SELECT * FROM dot_users WHERE firebase_uid IN (?)';
-      const users = await db(query, [uids]);
+  //     // Extract the UIDs from the result
+  //     const uids = userCourses.map((row) => row.uid);
 
 
-      // Categorize users
-      const mentors = users.filter((user) => user.user_type === 'mentor');
-      const students = users.filter((user) => user.user_type === 'student');
+  //     // Check if there are any UIDs
+  //     if (uids.length === 0) {
+  //       socket.emit('getUsers', { mentors: [], students: [] });
+  //       return;
+  //     }
 
-      // Emit data via socket using the 'getUsers' event
-      socket.emit('getUsers', { mentors, students });
-
-    } catch (error) {
-      console.error('Error fetching or processing users:', error.message);
-      socket.emit('error', { message: 'Error fetching users' });
-    }
-
-    socket.on("refreshConnection", () => {
-      console.log("Refreshing connection");
-    });
-
-  });
+  //     // Fetch users from dot_users based on the UIDs
+  //     const query = 'SELECT * FROM dot_users WHERE firebase_uid IN (?)';
+  //     const users = await db(query, [uids]);
 
 
+  //     // Categorize users
+  //     const mentors = users.filter((user) => user.user_type === 'mentor');
+  //     const students = users.filter((user) => user.user_type === 'student');
 
+  //     // Emit data via socket using the 'getUsers' event
+  //     socket.emit('getUsers', { mentors, students });
 
+  //   } catch (error) {
+  //     console.error('Error fetching or processing users:', error.message);
+  //     socket.emit('error', { message: 'Error fetching users' });
+  //   }
 
+  //   socket.on("refreshConnection", () => {
+  //     console.log("Refreshing connection");
+  //   });
+
+  // });
 
 });
 
 // Import and use routes
-const mentorRoutes = require('./routes/mentorRouter');
-// const chatRoutes = require('./routes/chatRouter');
-// const messageRoutes = require('./routes/messageRouter');
+const getUsersRoutes = require('./routes/getUsersRouter');
+app.use('/', getUsersRoutes);
 
-app.use('/', mentorRoutes);
-// app.use('/', chatRoutes);
-// app.use('/', messageRoutes);
 
 server.listen(port, hostname, () => {
   console.log(`Server running at http://${hostname}:${port}/`);
