@@ -67,15 +67,16 @@ const uploadImageToS3 = (imageBuffer, imageName) => {
 io.on("connection", (socket) => {
   socket.on("Sendmessage", async (msg) => {
     console.log("Calling Send Message");
-    const { message, sourceId, targetId } = msg;
-    console.log({ message, sourceId, targetId, chatId });
+    const { message, sourceId, targetId, username } = msg;
+    console.log({ message, sourceId, targetId, chatId, username });
 
-    const newMessage = new Message({ message, sourceId, chatId });
+    const newMessage = new Message({ message, sourceId, chatId, username });
     await newMessage.save();
     console.log("Saved");
 
     // Emit the message to all connected clients in the chat
     io.to(chatId.toString()).emit("OneByOnemessage", newMessage);
+    io.to(chatId.toString()).emit("Groupmessages", newMessage);
     console.log("Message emitted to chatId:", chatId);
   });
 
@@ -118,8 +119,8 @@ io.on("connection", (socket) => {
     try {
       let chat = await GroupChat.findOne({
         subject: subject,
-        users: { $all: users, $size: users.length },
-      });
+        users: { $in: [subject] },
+      });      
  
       if (chat) {
         const messages = await Message.find({ chatId: chat._id });
