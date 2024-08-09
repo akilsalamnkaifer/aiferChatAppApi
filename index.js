@@ -7,6 +7,7 @@ const { db, checkConnection } = require('./config/sqlDb')
 const Message = require('./models/Message');
 const Chat = require('./models/Chat');
 let chatId = "";
+let GroupchatId = "";
 require('dotenv').config();
 const AWS = require('aws-sdk');
 const s3 = new AWS.S3({
@@ -75,9 +76,22 @@ io.on("connection", (socket) => {
     console.log("Saved");
 
     // Emit the message to all connected clients in the chat
-    io.to(chatId.toString()).emit("OneByOnemessage", newMessage);
     io.to(chatId.toString()).emit("Groupmessages", newMessage);
     console.log("Message emitted to chatId:", chatId);
+  });
+
+  socket.on("SendGroupmessage", async (msg) => {
+    console.log("Calling Send Group Message");
+    const { message, sourceId, targetId, username } = msg;
+    console.log({ message, sourceId, targetId, GroupchatId, username });
+
+    const newMessage = new Message({ message, sourceId, chatId : GroupchatId, username });
+    await newMessage.save();
+    console.log("Saved Group Message");
+
+    // Emit the message to all connected clients in the chat
+    io.to(GroupchatId.toString()).emit("Groupmessages", newMessage);
+    console.log("Message emitted to chatId:", GroupchatId);
   });
 
   socket.on("leaveChat", ({ sourceId }) => {
@@ -129,12 +143,12 @@ io.on("connection", (socket) => {
           socket.emit("Groupmessages", message);
         });
         socket.join(chat._id.toString()); 
-        return (chatId = chat._id);
+        return (GroupchatId = chat._id);
       } else {
         chat = new GroupChat({ subject,users });
         await chat.save();
         socket.join(chat._id.toString()); 
-        return (chatId = chat._id);
+        return (GroupchatId = chat._id);
       }
     } catch (error) {
       console.error("Error creating chat:", error);
