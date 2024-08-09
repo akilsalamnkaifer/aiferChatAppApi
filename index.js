@@ -68,10 +68,9 @@ const uploadImageToS3 = (imageBuffer, imageName) => {
 io.on("connection", (socket) => {
   socket.on("Sendmessage", async (msg) => {
     console.log("Calling Send Message");
-    const { message, sourceId, targetId, username } = msg;
-    console.log({ message, sourceId, targetId, chatId, username });
+    const { message, sourceId } = msg;
 
-    const newMessage = new Message({ message, sourceId, chatId, username });
+    const newMessage = new Message({ message, sourceId, chatId });
     await newMessage.save();
     console.log("Saved");
 
@@ -82,8 +81,8 @@ io.on("connection", (socket) => {
 
   socket.on("SendGroupmessage", async (msg) => {
     console.log("Calling Send Group Message");
-    const { message, sourceId, targetId, username } = msg;
-    console.log({ message, sourceId, targetId, GroupchatId, username });
+    const { message, sourceId, username } = msg;
+    console.log({ message, sourceId, GroupchatId, username });
 
     const newMessage = new Message({ message, sourceId, chatId : GroupchatId, username });
     await newMessage.save();
