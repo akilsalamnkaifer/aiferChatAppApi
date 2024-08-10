@@ -68,9 +68,9 @@ const uploadImageToS3 = (imageBuffer, imageName) => {
 io.on("connection", (socket) => {
   socket.on("Sendmessage", async (msg) => {
     console.log("Calling Send Message");
-    const { message, sourceId } = msg;
+    const { message, sourceId, isImage, isVoice, isPdf } = msg;
 
-    const newMessage = new Message({ message, sourceId, chatId });
+    const newMessage = new Message({ message, sourceId, chatId, isImage, isVoice, isPdf });
     await newMessage.save();
     console.log("Saved");
 
@@ -81,21 +81,16 @@ io.on("connection", (socket) => {
 
   socket.on("SendGroupmessage", async (msg) => {
     console.log("Calling Send Group Message");
-    const { message, sourceId, username } = msg;
+    const { message, sourceId, username, isImage, isVoice, isPdf } = msg;
     console.log({ message, sourceId, GroupchatId, username });
 
-    const newMessage = new Message({ message, sourceId, chatId : GroupchatId, username });
+    const newMessage = new Message({ message, sourceId, chatId : GroupchatId, username, isImage, isVoice, isPdf });
     await newMessage.save();
     console.log("Saved Group Message");
 
     // Emit the message to all connected clients in the chat
     io.to(GroupchatId.toString()).emit("Groupmessages", newMessage);
     console.log("Message emitted to chatId:", GroupchatId);
-  });
-
-  socket.on("leaveChat", ({ sourceId }) => {
-    console.log("Leave Chat:", sourceId);
-    delete clients[sourceId];
   });
 
   socket.on("joinChat", async ({ users }) => {
