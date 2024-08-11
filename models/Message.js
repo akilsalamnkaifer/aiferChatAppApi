@@ -24,9 +24,11 @@ const MessageSchema = new mongoose.Schema({
   },
   isVoice: {
     type: Boolean,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   }
-},{
-  timestamps: true
 });
 
 
