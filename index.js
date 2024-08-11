@@ -82,7 +82,7 @@ io.on("connection", (socket) => {
   socket.on("SendGroupmessage", async (msg) => {
     console.log("Calling Send Group Message");
     const { message, sourceId, username, isImage, isVoice, isPdf } = msg;
-    console.log({ message, sourceId, GroupchatId, username });
+    console.log({ message, sourceId, GroupchatId, username, isImage, isVoice, isPdf });
 
     const newMessage = new Message({ message, sourceId, chatId : GroupchatId, username, isImage, isVoice, isPdf });
     await newMessage.save();
@@ -148,8 +148,9 @@ io.on("connection", (socket) => {
       console.error("Error creating chat:", error);
     }
   });
-
 });
+
+
 
 // // Connect to the Socket server
 // io.on("connection", (socket) => {
