@@ -75,7 +75,7 @@ io.on("connection", (socket) => {
     console.log("Saved");
 
     // Emit the message to all connected clients in the chat
-    io.to(chatId.toString()).emit("Groupmessages", newMessage);
+    io.to(chatId.toString()).emit("OneByOnemessage", newMessage);
     console.log("Message emitted to chatId:", chatId);
   });
 
