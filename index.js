@@ -30,6 +30,29 @@ const io = require("socket.io")(server, {
 const hostname = '0.0.0.0';
 const port = process.env.PORT || 3005;
 
+
+const sendNotification = async (targetId, message, username) => {
+  try {
+    const response = await axios.post(
+      "https://api.onesignal.com/notifications",
+      {
+        app_id: process.env.ONE_SIGNAL_APP_ID,
+        contents: { en: message },
+        headings: { en: username },
+        include_external_user_ids: [targetId],
+      },
+      {
+        headers: {
+          Authorization: process.env.ONE_SIGNAL_API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error sending notification:", error);
+  }
+};
+
 // Middleware to parse JSON bodies
 app.use(express.json());
 
@@ -52,27 +75,7 @@ const uploadImageToS3 = (imageBuffer, imageName) => {
   // Construct the file path
   const filePath = `${year}/${month}/${day}/${imageName}`;
 
-  const sendNotification = async (targetId, message, username) => {
-    try {
-      const response = await axios.post(
-        "https://api.onesignal.com/notifications",
-        {
-          app_id: process.env.ONE_SIGNAL_APP_ID,
-          contents: { en: message },
-          headings: { en: username },
-          include_external_user_ids: [targetId],
-        },
-        {
-          headers: {
-            Authorization: process.env.ONE_SIGNAL_API_KEY,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    } catch (error) {
-      console.error("Error sending notification:", error);
-    }
-  };
+
 
   // Set the parameters for S3 upload
   const params = {
