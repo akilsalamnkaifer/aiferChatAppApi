@@ -32,6 +32,20 @@ const hostname = '0.0.0.0';
 const port = process.env.PORT || 3005;
 
 
+
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+app.use(cors()); // Enable CORS for all routes
+
+// Connect to the database
+connectDB().catch(err => {
+  console.error('Failed to connect to the database:', err);
+  process.exit(1); // Exit the process if the connection fails
+});
+
+
 const sendNotification = async (targetId, message, username) => {
   try {
     const response = await axios.post(
@@ -54,42 +68,49 @@ const sendNotification = async (targetId, message, username) => {
   }
 };
 
-// Middleware to parse JSON bodies
-app.use(express.json());
+const sendGroupNotification = async (uid, course_id) => {
+  const userId = uid;
 
-app.use(cors()); // Enable CORS for all routes
+    // Fetch UIDs from user_courses based on the subject
+    const userCourses = await db('SELECT uid FROM user_courses WHERE course_id = ?', [course_id]);
+  
+    // Extract the UIDs from the result
+    const uids = userCourses.map((row) => row.uid);
+  
+    console.log("uids: ", uids);
+  
+    // Filter out the userId from the list of UIDs
+    const targetIds = uids.filter(uid => uid !== userId);
 
-// Connect to the database
-connectDB().catch(err => {
-  console.error('Failed to connect to the database:', err);
-  process.exit(1); // Exit the process if the connection fails
-});
+    console.log("targetIds",targetIds);
+    
 
-// Function to upload image to S3
-const uploadImageToS3 = (imageBuffer, imageName) => {
-  // Get the current date
-  const currentDate = new Date();
-  const year = currentDate.getFullYear();
-  const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-  const day = String(currentDate.getDate()).padStart(2, '0');
+  try {
+    const response = await axios.post(
+      "https://api.onesignal.com/notifications",
+      {
+        app_id: process.env.ONE_SIGNAL_APP_ID,
+        contents: { en: "New message received" },
+        headings: { en: course_id },
+        include_external_user_ids: targetIds,
+      },
+      {
+        headers: {
+          Authorization: process.env.ONE_SIGNAL_API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-  // Construct the file path
-  const filePath = `${year}/${month}/${day}/${imageName}`;
-
-
-
-  // Set the parameters for S3 upload
-  const params = {
-    Bucket: process.env.S3_BUCKET_NAME,
-    Key: filePath,
-    Body: imageBuffer,
-    ContentType: 'image/jpeg', // or the appropriate MIME type
-    ACL: 'public-read' // adjust the ACL as needed
-  };
-
-  // Upload the image
-  return s3.upload(params).promise();
+    console.log("Notification sent successfully");
+    
+  } catch (error) {
+    console.error("Error sending notification:", error);
+  }
 };
+
+
+
 
 io.on("connection", (socket) => {
   socket.on("Sendmessage", async (msg) => {
@@ -111,7 +132,7 @@ io.on("connection", (socket) => {
 
   socket.on("SendGroupmessage", async (msg) => {
     console.log("Calling Send Group Message");
-    const { message, sourceId, username, isImage, isVoice, isPdf } = msg;
+    const { message, sourceId, username, isImage, isVoice, isPdf, course_id } = msg;
     console.log({ message, sourceId, GroupchatId, username, isImage, isVoice, isPdf });
 
     const newMessage = new Message({ message, sourceId, chatId : GroupchatId, username, isImage, isVoice, isPdf });
@@ -120,6 +141,7 @@ io.on("connection", (socket) => {
 
     // Emit the message to all connected clients in the chat
     io.to(GroupchatId.toString()).emit("Groupmessages", newMessage);
+    sendGroupNotification(sourceId, course_id);
     console.log("Message emitted to chatId:", GroupchatId);
   });
 
