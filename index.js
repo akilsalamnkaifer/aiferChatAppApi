@@ -15,6 +15,7 @@ const s3 = new AWS.S3({
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   region: process.env.AWS_REGION,
 });
+const axios = require("axios");
 
 checkConnection()
 
@@ -106,7 +107,7 @@ io.on("connection", (socket) => {
     // Emit the message to all connected clients in the chat
     io.to(chatId.toString()).emit("OneByOnemessage", newMessage);
     sendNotification(targetId, message, username);
-  });
+  });
 
   socket.on("SendGroupmessage", async (msg) => {
     console.log("Calling Send Group Message");
