@@ -70,6 +70,13 @@ const sendNotification = async (targetId, message, username) => {
 
 const sendGroupNotification = async (uid, course_id) => {
   const userId = uid;
+  console.log("uid: ", uid);
+  console.log("course_id: ", course_id);
+  
+  
+
+  console.log("userId: ", userId);
+  
 
     // Fetch UIDs from user_courses based on the subject
     const userCourses = await db('SELECT uid FROM user_courses WHERE course_id = ?', [course_id]);
