@@ -68,7 +68,7 @@ const sendNotification = async (targetId, message, username) => {
   }
 };
 
-const sendGroupNotification = async (uid, course_id) => {
+const sendGroupNotification = async (uid, course_id, courseName) => {
   const userId = uid;
   console.log("uid: ", uid);
   console.log("course_id: ", course_id);
@@ -98,7 +98,7 @@ const sendGroupNotification = async (uid, course_id) => {
       {
         app_id: process.env.ONE_SIGNAL_APP_ID,
         contents: { en: "New message received" },
-        headings: { en: course_id },
+        headings: { en: courseName },
         include_external_user_ids: targetIds,
       },
       {
@@ -139,7 +139,7 @@ io.on("connection", (socket) => {
 
   socket.on("SendGroupmessage", async (msg) => {
     console.log("Calling Send Group Message");
-    const { message, sourceId, username, isImage, isVoice, isPdf, course_id } = msg;
+    const { message, sourceId, username, isImage, isVoice, isPdf, course_id, courseName } = msg;
     console.log({ message, sourceId, GroupchatId, username, isImage, isVoice, isPdf });
 
     const newMessage = new Message({ message, sourceId, chatId : GroupchatId, username, isImage, isVoice, isPdf });
@@ -148,7 +148,7 @@ io.on("connection", (socket) => {
 
     // Emit the message to all connected clients in the chat
     io.to(GroupchatId.toString()).emit("Groupmessages", newMessage);
-    sendGroupNotification(sourceId, course_id);
+    sendGroupNotification(sourceId, course_id, courseName);
     console.log("Message emitted to chatId:", GroupchatId);
   });
 
