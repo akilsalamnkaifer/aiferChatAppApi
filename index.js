@@ -46,13 +46,13 @@ connectDB().catch(err => {
 });
 
 
-const sendNotification = async (targetId, message, username) => {
+const sendNotification = async (targetId, message, username, isImage, isVoice, isPdf) => {
   try {
     const response = await axios.post(
       "https://api.onesignal.com/notifications",
       {
         app_id: process.env.ONE_SIGNAL_APP_ID,
-        contents: { en: message },
+        contents: { en: (isVoice === true ? "New voice received" : isPdf === true ? "New pdf received" : isImage === true ? "New image received" : message) },
         headings: { en: username },
         include_external_user_ids: [targetId],
       },
@@ -68,36 +68,21 @@ const sendNotification = async (targetId, message, username) => {
   }
 };
 
-const sendGroupNotification = async (uid, course_id, courseName) => {
+const sendGroupNotification = async (uid, course_id, courseName ) => {
   const userId = uid;
-  console.log("uid: ", uid);
-  console.log("course_id: ", course_id);
-  
-  
 
-  console.log("userId: ", userId);
-  
-
-    // Fetch UIDs from user_courses based on the subject
     const userCourses = await db('SELECT uid FROM user_courses WHERE course_id = ?', [course_id]);
   
-    // Extract the UIDs from the result
     const uids = userCourses.map((row) => row.uid);
   
-    console.log("uids: ", uids);
-  
-    // Filter out the userId from the list of UIDs
     const targetIds = uids.filter(uid => uid !== userId);
-
-    console.log("targetIds",targetIds);
-    
 
   try {
     const response = await axios.post(
       "https://api.onesignal.com/notifications",
       {
         app_id: process.env.ONE_SIGNAL_APP_ID,
-        contents: { en: "New message received" },
+        contents: { en: "You have a new message received" },
         headings: { en: courseName },
         include_external_user_ids: targetIds,
       },
@@ -134,7 +119,7 @@ io.on("connection", (socket) => {
     await newMessage.save();
     // Emit the message to all connected clients in the chat
     io.to(chatId.toString()).emit("OneByOnemessage", newMessage);
-    sendNotification(targetId, message, username);
+    sendNotification(targetId, message, username, isImage, isVoice, isPdf);
   });
 
   socket.on("SendGroupmessage", async (msg) => {
