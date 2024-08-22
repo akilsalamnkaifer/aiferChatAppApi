@@ -144,7 +144,7 @@ io.on("connection", (socket) => {
     
     try {
       let chat = await Chat.findOne({
-        users: { $all: users, $size: users.length },
+        users: { $in: [users]},
       });
  
       if (chat) {
