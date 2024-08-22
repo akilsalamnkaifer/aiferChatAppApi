@@ -142,11 +142,16 @@ io.on("connection", (socket) => {
     console.log("Join Chat:", users);
   
     try {
-      // Find a chat that contains exactly the same users, regardless of order
-      let chat = await Chat.findOne({
+      // Find all chats that contain all specified users (in any order)
+      let chats = await Chat.find({
         users: { $all: users },
-        $where: `this.users.length === ${users.length}`
       });
+  
+      // Filter chats to find one with the exact users array
+      let chat = chats.find((chat) =>
+        chat.users.length === users.length &&
+        chat.users.every((user) => users.includes(user))
+      );
   
       if (chat) {
         // Find messages related to the chat
