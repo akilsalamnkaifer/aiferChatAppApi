@@ -138,48 +138,45 @@ io.on("connection", (socket) => {
   });
 
   
-
   socket.on("joinChat", async ({ users }) => {
     console.log("Join Chat:", users);
-    
+  
     try {
-      // Sort users array to ensure consistent order
-      const sortedUsers = users.slice().sort();
-      
+      // Find a chat that contains all users in the `users` array
       let chat = await Chat.findOne({
-        users: { $all: sortedUsers },
-        $expr: { $eq: [{ $size: "$users" }, users.length] }
+        users: { $all: users },
       });
-
-      console.log("Chat:", chat);
-      
-    
+  
       if (chat) {
+        // Find messages related to the chat
         const messages = await Message.find({ chatId: chat._id });
-
-        console.log("Messages:", messages);
-        
-    
+  
+        // Emit each message to the socket
         messages.forEach((message) => {
-          socket.emit("OneByOnemessage", message);
+          socket.emit("OneByOneMessage", message);
         });
-        socket.join(chat._id.toString());
-        console.log("Chat1:", chat._id);
         
+        // Join the chat room
+        socket.join(chat._id.toString());
+  
+        // Return chatId if needed
         return (chatId = chat._id);
       } else {
-        chat = new Chat({ users: sortedUsers });
-        console.log("Chat2:", chat);
-        
+        // Create a new chat if one doesn't exist
+        chat = new Chat({ users });
         await chat.save();
+  
+        // Join the chat room
         socket.join(chat._id.toString());
+  
+        // Return chatId if needed
         return (chatId = chat._id);
       }
     } catch (error) {
-      console.error("Error creating chat:", error);
+      console.error("Error creating or joining chat:", error);
     }
-    
   });
+  
 
   socket.on("joinGroup", async ({ users, subject }) => {
     console.log("Join Group:", users);
