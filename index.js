@@ -166,14 +166,14 @@ io.on("connection", (socket) => {
         socket.join(chat._id.toString());
         console.log("Chat1:", chat._id);
         
-        return chat._id;
+        return (chatId = chat._id);
       } else {
         chat = new Chat({ users: sortedUsers });
         console.log("Chat2:", chat);
         
         await chat.save();
         socket.join(chat._id.toString());
-        return chat._id;
+        return (chatId = chat._id);
       }
     } catch (error) {
       console.error("Error creating chat:", error);
