@@ -150,17 +150,27 @@ io.on("connection", (socket) => {
         users: { $all: sortedUsers },
         $expr: { $eq: [{ $size: "$users" }, users.length] }
       });
+
+      console.log("Chat:", chat);
+      
     
       if (chat) {
         const messages = await Message.find({ chatId: chat._id });
+
+        console.log("Messages:", messages);
+        
     
         messages.forEach((message) => {
           socket.emit("OneByOnemessage", message);
         });
         socket.join(chat._id.toString());
+        console.log("Chat1:", chat._id);
+        
         return chat._id;
       } else {
         chat = new Chat({ users: sortedUsers });
+        console.log("Chat2:", chat);
+        
         await chat.save();
         socket.join(chat._id.toString());
         return chat._id;
