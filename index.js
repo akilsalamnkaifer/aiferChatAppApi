@@ -148,29 +148,16 @@ io.on("connection", (socket) => {
       });
  
       if (chat) {
-        console.log("Chat exists:", chat);
-        
         const messages = await Message.find({ chatId: chat._id });
-
-        console.log("Messages:", messages);
-        
 
         messages.forEach((message) => {;
           socket.emit("OneByOnemessage", message);
         });
-
-        console.log("Joined Chat:", chat._id);
-        
         socket.join(chat._id.toString()); 
         return (chatId = chat._id);
       } else {
-        console.log("Chat does not exist:", chat);
         chat = new Chat({ users });
-        console.log("Chat created:", chat);
-        
         await chat.save();
-
-        console.log("Joined Chat:", chat._id);
         socket.join(chat._id.toString()); 
         return (chatId = chat._id);
       }
