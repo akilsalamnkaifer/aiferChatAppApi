@@ -6,7 +6,7 @@ const connectDB = require('./config/db');
 const { db, checkConnection } = require('./config/sqlDb')
 const Message = require('./models/Message');
 const Chat = require('./models/Chat');
-let chatId = "";
+let chatId;
 let GroupchatId = "";
 require('dotenv').config();
 const AWS = require('aws-sdk');
