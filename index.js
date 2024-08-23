@@ -3,25 +3,28 @@ const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const connectDB = require('./config/db');
-const { db, checkConnection } = require('./config/sqlDb')
+const { db, checkConnection } = require('./config/sqlDb');
 const Message = require('./models/Message');
 const Chat = require('./models/Chat');
-let chatId;
-let GroupchatId = "";
+const GroupChat = require('./models/GroupChat');
 require('dotenv').config();
 const AWS = require('aws-sdk');
+const axios = require("axios");
+
+let chatId;
+let GroupchatId = "";
+
+checkConnection();
+
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   region: process.env.AWS_REGION,
 });
-const axios = require("axios");
-
-checkConnection()
 
 const app = express();
 const server = http.createServer(app);
-const io = require("socket.io")(server, {
+const io = socketIo(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
@@ -31,12 +34,8 @@ const io = require("socket.io")(server, {
 const hostname = '0.0.0.0';
 const port = process.env.PORT || 3005;
 
-
-
-
 // Middleware to parse JSON bodies
 app.use(express.json());
-
 app.use(cors()); // Enable CORS for all routes
 
 // Connect to the database
@@ -45,14 +44,13 @@ connectDB().catch(err => {
   process.exit(1); // Exit the process if the connection fails
 });
 
-
 const sendNotification = async (targetId, message, username, isImage, isVoice, isPdf) => {
   try {
-    const response = await axios.post(
+    await axios.post(
       "https://api.onesignal.com/notifications",
       {
         app_id: process.env.ONE_SIGNAL_APP_ID,
-        contents: { en: (isVoice === true ? "New voice received" : isPdf === true ? "New pdf received" : isImage === true ? "New image received" : message) },
+        contents: { en: isVoice ? "New voice received" : isPdf ? "New pdf received" : isImage ? "New image received" : message },
         headings: { en: username },
         include_external_user_ids: [targetId],
       },
@@ -65,20 +63,16 @@ const sendNotification = async (targetId, message, username, isImage, isVoice, i
     );
   } catch (error) {
     console.error("Error sending notification:", error);
-  }
+  }
 };
 
-const sendGroupNotification = async (uid, course_id, courseName ) => {
-  const userId = uid;
-
-    const userCourses = await db('SELECT uid FROM user_courses WHERE course_id = ?', [course_id]);
-  
-    const uids = userCourses.map((row) => row.uid);
-  
-    const targetIds = uids.filter(uid => uid !== userId);
-
+const sendGroupNotification = async (uid, course_id, courseName) => {
   try {
-    const response = await axios.post(
+    const userCourses = await db('SELECT uid FROM user_courses WHERE course_id = ?', [course_id]);
+    const uids = userCourses.map((row) => row.uid);
+    const targetIds = uids.filter(id => id !== uid);
+
+    await axios.post(
       "https://api.onesignal.com/notifications",
       {
         app_id: process.env.ONE_SIGNAL_APP_ID,
@@ -95,49 +89,30 @@ const sendGroupNotification = async (uid, course_id, courseName ) => {
     );
 
     console.log("Notification sent successfully");
-    
   } catch (error) {
-    console.error("Error sending notification:", error);
-  }
+    console.error("Error sending group notification:", error);
+  }
 };
-
-
-
 
 io.on("connection", (socket) => {
   socket.on("Sendmessage", async (msg) => {
-    const { message, sourceId, targetId, username, isImage, isVoice, isPdf } =
-      msg;
-    const newMessage = new Message({
-      message,
-      sourceId,
-      chatId,
-      isImage,
-      isVoice,
-      isPdf,
-    });
+    const { message, sourceId, targetId, username, isImage, isVoice, isPdf } = msg;
+    const newMessage = new Message({ message, sourceId, chatId, isImage, isVoice, isPdf });
     await newMessage.save();
-    // Emit the message to all connected clients in the chat
+
     io.to(chatId.toString()).emit("OneByOnemessage", newMessage);
     sendNotification(targetId, message, username, isImage, isVoice, isPdf);
   });
 
   socket.on("SendGroupmessage", async (msg) => {
-    console.log("Calling Send Group Message");
     const { message, sourceId, username, isImage, isVoice, isPdf, course_id, courseName } = msg;
-    console.log({ message, sourceId, GroupchatId, username, isImage, isVoice, isPdf });
 
-    const newMessage = new Message({ message, sourceId, chatId : GroupchatId, username, isImage, isVoice, isPdf });
+    const newMessage = new Message({ message, sourceId, chatId: GroupchatId, username, isImage, isVoice, isPdf });
     await newMessage.save();
-    console.log("Saved Group Message");
 
-    // Emit the message to all connected clients in the chat
     io.to(GroupchatId.toString()).emit("Groupmessages", newMessage);
     sendGroupNotification(sourceId, course_id, courseName);
-    console.log("Message emitted to chatId:", GroupchatId);
   });
-
-  
 
   socket.on("joinChat", async ({ users }) => {
     try {
@@ -145,73 +120,49 @@ io.on("connection", (socket) => {
         users: { $all: users, $size: users.length },
       });
 
-      console.log("Chat:", chat);
-
       if (chat) {
         const messages = await Message.find({ chatId: chat._id });
-        console.log("Messages:", messages);
-        
-        messages.forEach((message) => {
-          socket.emit("OneByOnemessage", message);
-        });
-        console.log("Message emitted to chatId:", chat._id);
-        
+        messages.forEach((message) => socket.emit("OneByOnemessage", message));
         socket.join(chat._id.toString());
-        return (chatId = chat._id);
+        chatId = chat._id;
       } else {
         chat = new Chat({ users });
-        console.log("Create Chat:", chat);
-        
         await chat.save();
-        console.log("Chat saved:", chat);
-        console.log("Chat ID:", chat._id);
-        
         socket.join(chat._id.toString());
-        return (chatId = chat._id);
+        chatId = chat._id;
       }
     } catch (error) {
-      console.error("Error creating chat:", error);
+      console.error("Error joining chat:", error);
     }
   });
 
-
   socket.on("joinGroup", async ({ users, subject }) => {
-    console.log("Join Group:", users);
-    console.log("Subject:", subject);
-    
     try {
       let chat = await GroupChat.findOne({
-        subject: subject,
+        subject,
         users: { $in: [subject] },
-      });      
- 
+      });
+
       if (chat) {
         const messages = await Message.find({ chatId: chat._id });
-
-        messages.forEach((message) => {;
-          socket.emit("Groupmessages", message);
-        });
-        socket.join(chat._id.toString()); 
-        return (GroupchatId = chat._id);
+        messages.forEach((message) => socket.emit("Groupmessages", message));
+        socket.join(chat._id.toString());
+        GroupchatId = chat._id;
       } else {
-        chat = new GroupChat({ subject,users });
+        chat = new GroupChat({ subject, users });
         await chat.save();
-        socket.join(chat._id.toString()); 
-        return (GroupchatId = chat._id);
+        socket.join(chat._id.toString());
+        GroupchatId = chat._id;
       }
     } catch (error) {
-      console.error("Error creating chat:", error);
+      console.error("Error joining group:", error);
     }
   });
 });
 
-
-
 // Import and use routes
 const getUsersRoutes = require('./routes/getUsersRouter');
-const GroupChat = require('./models/GroupChat');
 app.use('/', getUsersRoutes);
-
 
 server.listen(port, hostname, () => {
   console.log(`Server running at http://${hostname}:${port}/`);
