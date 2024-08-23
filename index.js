@@ -115,6 +115,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("joinChat", async ({ users }) => {
+    console.log("Joining chat with users:", users);
+    
     try {
       let chat = await Chat.findOne({
         users: { $all: users, $size: users.length },
@@ -122,7 +124,11 @@ io.on("connection", (socket) => {
 
       if (chat) {
         const messages = await Message.find({ chatId: chat._id });
+        console.log("Messages:", messages);
+        
         messages.forEach((message) => socket.emit("OneByOnemessage", message));
+        console.log("Joined chat:", chat._id.toString());
+        
         socket.join(chat._id.toString());
         chatId = chat._id;
       } else {
