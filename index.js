@@ -140,31 +140,40 @@ io.on("connection", (socket) => {
   
 
   socket.on("joinChat", async ({ users }) => {
-    console.log("Join Chat:", users);
-    
     try {
       let chat = await Chat.findOne({
         users: { $all: users, $size: users.length },
       });
- 
+
+      console.log("Chat:", chat);
+
       if (chat) {
         const messages = await Message.find({ chatId: chat._id });
-
-        messages.forEach((message) => {;
+        console.log("Messages:", messages);
+        
+        messages.forEach((message) => {
           socket.emit("OneByOnemessage", message);
         });
-        socket.join(chat._id.toString()); 
+        console.log("Message emitted to chatId:", chat._id);
+        
+        socket.join(chat._id.toString());
         return (chatId = chat._id);
       } else {
         chat = new Chat({ users });
+        console.log("Create Chat:", chat);
+        
         await chat.save();
-        socket.join(chat._id.toString()); 
+        console.log("Chat saved:", chat);
+        console.log("Chat ID:", chat._id);
+        
+        socket.join(chat._id.toString());
         return (chatId = chat._id);
       }
     } catch (error) {
       console.error("Error creating chat:", error);
     }
   });
+
 
   socket.on("joinGroup", async ({ users, subject }) => {
     console.log("Join Group:", users);
