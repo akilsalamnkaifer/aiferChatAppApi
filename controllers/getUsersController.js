@@ -41,6 +41,11 @@ const convertTo24HourFormat = (time) => {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
 };
 
+const adjustToTimeZone = (date, offsetInMinutes) => {
+  const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
+  return new Date(utcTime + offsetInMinutes * 60000);
+};
+
 
 const getChatUserBySubject = async (req, res) => {
 
@@ -122,14 +127,12 @@ const AddReminder = async (req, res) => {
     oneMonthLater.setMonth(now.getMonth() + 1);
 
     for (const date of dates) {
-      const scheduledDateTime = new Date(date);
+      let scheduledDateTime = new Date(date);
       scheduledDateTime.setHours(hours, minutes, 0);
 
-      const isoDateTime = scheduledDateTime.toISOString();
+      scheduledDateTime = adjustToTimeZone(scheduledDateTime, 330);
 
-      // const scheduledDateTime = new Date(date);
-      // scheduledDateTime.setUTCHours(hours, minutes, 0, 0);
-      // const isoDateTime = scheduledDateTime.toISOString();
+      const isoDateTime = scheduledDateTime.toISOString();
 
       console.log(isoDateTime);
       
